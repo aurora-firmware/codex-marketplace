@@ -1,0 +1,36 @@
+{
+  "name": "github-utils",
+  "version": "1.1.0",
+  "description": "GitHub CLI guidance plus issue-creation and pull-request-review workflows for Codex.",
+  "author": {
+    "name": "cc-marketplace maintainers"
+  },
+  "homepage": "https://github.com/aurora-firmware/codex-marketplace",
+  "repository": "https://github.com/aurora-firmware/codex-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "gh",
+    "pull-request",
+    "review",
+    "issue"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GitHub Utils",
+    "shortDescription": "GitHub CLI, issue, and PR review workflows.",
+    "longDescription": "Use GitHub CLI guidance to create issues and review pull requests in Codex.",
+    "developerName": "cc-marketplace maintainers",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Review pull request 123.",
+      "Create a GitHub issue for this bug.",
+      "Show me how to use gh for this task."
+    ],
+    "brandColor": "#24292F"
+  }
+}
