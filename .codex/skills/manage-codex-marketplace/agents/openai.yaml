@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Codex Marketplace"
+  short_description: "Maintain this repository’s Codex plugins and marketplace."
+  default_prompt: "Use $manage-codex-marketplace to update a plugin, skill, marketplace entry, MCP configuration, or publication workflow in this repository."
