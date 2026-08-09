@@ -1,7 +1,7 @@
 {
   "name": "github-utils",
-  "version": "1.1.0",
-  "description": "GitHub CLI guidance plus issue-creation and pull-request-review workflows for Codex.",
+  "version": "1.3.0",
+  "description": "Bundles GitHub CLI guidance, PR review workflows (including re-review and a receive-pr-review response workflow), issue creation, and changelog generation for Codex.",
   "author": {
     "name": "cc-marketplace maintainers"
   },
@@ -13,13 +13,15 @@
     "gh",
     "pull-request",
     "review",
-    "issue"
+    "issue",
+    "changelog",
+    "release-notes"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "GitHub Utils",
-    "shortDescription": "GitHub CLI, issue, and PR review workflows.",
-    "longDescription": "Use GitHub CLI guidance to create issues and review pull requests in Codex.",
+    "shortDescription": "GitHub CLI, issue, PR review/response, and changelog workflows.",
+    "longDescription": "Use GitHub CLI guidance to create issues, review and respond to pull requests, and generate changelogs in Codex.",
     "developerName": "cc-marketplace maintainers",
     "category": "Developer Tools",
     "capabilities": [
@@ -29,7 +31,8 @@
     "defaultPrompt": [
       "Review pull request 123.",
       "Create a GitHub issue for this bug.",
-      "Show me how to use gh for this task."
+      "Show me how to use gh for this task.",
+      "Generate release notes for v1.2.0."
     ],
     "brandColor": "#24292F"
   }

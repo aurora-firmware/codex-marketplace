@@ -1,10 +1,12 @@
 # github-utils
 
-`github-utils` is a Codex plugin that bundles three GitHub-focused skills:
+`github-utils` is a Codex plugin that bundles GitHub-focused skills:
 
 - `gh-cli`
-- `new-issue`
 - `pr-review`
+- `receive-pr-review`
+- `new-issue`
+- `changelog`
 
 ## Skills
 
@@ -12,4 +14,4 @@ Use the bundled skills by name after installing this plugin from the Codex Marke
 
 ## Notes
 
-The skills originated in the companion Claude Code marketplace and were adapted for Codex packaging. Their GitHub workflows and reference material remain unchanged.
+The skills originated in the companion Claude Code marketplace and were adapted for Codex packaging. Their GitHub workflows and reference material remain unchanged; `pr-review` and `receive-pr-review` include a re-review/response loop (see each skill's `SKILL.md` for details).
