@@ -6,6 +6,7 @@
 - `pr-review`
 - `receive-pr-review`
 - `new-issue`
+- `fix-issue`
 - `changelog`
 
 ## Skills
@@ -14,4 +15,4 @@ Use the bundled skills by name after installing this plugin from the Codex Marke
 
 ## Notes
 
-The skills originated in the companion Claude Code marketplace and were adapted for Codex packaging. Their GitHub workflows and reference material remain unchanged; `pr-review` and `receive-pr-review` include a re-review/response loop (see each skill's `SKILL.md` for details).
+The skills originated in the companion Claude Code marketplace and were adapted for Codex packaging. `fix-issue` records diagnosis on the GitHub issue, implements a scoped fix, and hands the resulting pull request through the review/response loop. See each skill's `SKILL.md` for details.
