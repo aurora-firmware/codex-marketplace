@@ -1,138 +1,259 @@
 ---
 name: fix-issue
 description: >-
-  End-to-end workflow for turning a specific open GitHub issue into a verified
-  fix: diagnose the root cause before changing code, record the diagnosis in a
-  structured issue body, branch and implement the minimal fix, open a linked
-  PR, then use pr-review and receive-pr-review until clean or blocked. Use
-  when the user asks to fix, resolve, pick up, or ship one specific GitHub
-  issue. Not for selecting an issue to work on, feature requests, or
-  open-ended design work. Defers to gh-cli for exact GitHub CLI syntax.
+  End-to-end workflow for turning a specific open GitHub issue into a merged
+  fix: fetches the issue, diagnoses the root cause before touching any code,
+  rewrites the issue body into a structured template (Description, Expected
+  Behavior, Actual Behavior, Steps to Reproduce, Logs/Evidence, Diagnosis,
+  Status) with the diagnosis appended, branches off the repo's default
+  branch as `fix/<issue-number>-<short-description>`, implements and
+  verifies the minimal fix, opens a PR that links back to the issue, then
+  hands off to the pr-review and receive-pr-review skills to close the
+  loop. A lighter-weight alternative to a full internal bug-tracking
+  process — no separate ticketing system, no doc trail beyond the issue and
+  the PR themselves. Use whenever the user asks to fix, resolve, work, pick
+  up, or ship a fix for one specific GitHub issue — "fix issue #57", "let's
+  resolve this bug report", "pick up #12 and ship a fix for it", "work
+  through this GitHub issue end to end", "diagnose and fix #90" — even if
+  they don't name this skill directly. Not for triaging which issue to work
+  on next (that's just gh-cli list/read), and not for feature requests or
+  open-ended design work that needs exploration first — route those through
+  the project's own planning or spec process instead. Defers to gh-cli for
+  exact `gh` command syntax, and to pr-review / receive-pr-review for the
+  review loop once a PR is open.
 ---
 
 # fix-issue
 
-Take one specific open GitHub issue from report to a reviewed fix. The issue
-holds the diagnosis, and the branch and pull request hold the implementation;
-do not create a separate ticketing or documentation trail.
+Take one specific open GitHub issue from report to merged fix, without
+standing up a separate ticketing/doc-trail system: the issue itself carries
+the diagnosis, the branch and PR carry the fix, and `pr-review` /
+`receive-pr-review` carry the review loop.
 
-This skill defines the workflow, issue-body structure, and confirmation points.
-For exact `gh` syntax, read the `gh-cli` skill. For the PR review loop, use
-`pr-review` and `receive-pr-review`.
+This skill covers the *workflow* — what order to do things in, what to
+diagnose before coding, what template the issue body follows, and when to
+stop and confirm with the user. For exact `gh` command syntax at every step,
+use the `gh-cli` skill — this skill deliberately doesn't repeat that here.
 
-First check scope. Use this workflow for a bug, small well-scoped defect, or
-clearly specified small task. If the issue is a feature request or needs design
-exploration, explain that and route it through the project's planning or spec
-process instead.
+**Scope check first:** this skill is for a fix — a bug, a small well-scoped
+defect, a clearly-specified small task. If the issue is actually a feature
+request or needs design exploration, say so and suggest the project's own
+brainstorm/spec process instead of forcing it through this workflow.
 
-## 1. Fetch the issue
+## Two kinds of phase
 
-Accept a URL, `owner/repo#N`, or a bare issue number for the current repository.
-Use `gh issue view` to retrieve its number, title, body, labels, state, and URL.
+This workflow has two kinds of step, and they follow different rules.
 
-If it is closed or already has a linked PR, report that and ask whether to
-proceed rather than assuming the work is fresh.
+**GitHub-interface phases** — fetch and triage the issue (Step 1), rewrite the
+issue body (Step 3), open and describe the PR (Step 8), run the review loop and
+close the issue (Step 9). These follow GitHub conventions and this skill's own
+procedure, and the review loop runs through the `pr-review` / `receive-pr-review`
+skills.
 
-## 2. Diagnose before changing code
+**The local development phase** — diagnose (Step 2), branch (Step 4), implement
+(Step 5), verify (Step 6), commit (Step 7). This phase follows the **project's
+own coding guidelines, development architecture, standards, and skills** wherever
+they exist — the step-by-step below is a fallback for a project that defines
+none. The code the fix produces is expected to conform to the project's style
+guides, module and layer boundaries, dependency rules, and anything an ADR or
+design doc constrains; the Step 9 review checks the change against those, not
+only whether the bug is fixed.
 
-Do not edit implementation code during diagnosis.
+## Step 1 — Fetch the issue
 
-If the project provides a diagnosis or debugging skill, use it and adapt its
-output to the following fix contract. Otherwise:
+Resolve the issue the same way `pr-review` resolves a PR: a URL,
+`owner/repo#N`, a bare number against the current repo, or a number the user
+just named from a prior triage conversation.
 
-1. Reproduce or confirm the defect. If a live reproduction is impractical,
-   trace the implicated code path and state that this is what you did.
-2. Isolate the fault to the responsible file, function, or line.
-3. Identify the root cause rather than merely its symptom. Label an
-   evidence-backed but unconfirmed conclusion as a hypothesis.
-4. Form a fix contract containing root cause, isolated fault (`file:line`),
-   minimal planned fix, and planned verification.
+```bash
+gh issue view <N> --json number,title,body,labels,state,url
+```
 
-Keep the work scoped to that fault. Record adjacent problems as separate issue
-candidates instead of folding them into the change.
+If the issue is already closed, or already has a linked PR, say so and ask
+whether to proceed rather than assuming this is fresh work.
 
-## 3. Structure the issue body
+## Step 2 — Diagnose before touching any code
 
-Read [the issue template](references/issue-template.md). Reorganize the
-existing report into that structure without dropping reporter-provided details,
-then add the diagnosis and an appropriate status line.
+Do not write or edit implementation code in this step.
 
-Show the user the complete draft first. Updating an issue is GitHub-visible, so
-do not make that edit without explicit confirmation in the current conversation.
-If the user requests changes, revise and show the draft again. After approval,
-use `gh-cli` guidance to update the issue.
+If the project has its own diagnosis/debugging process or skill (for example a
+`debug` skill in its `.claude/skills/`), follow it as the project defines it.
+Whatever artifacts that process produces, summarize the resulting root cause
+into the issue's `## Diagnosis` section per Step 3 — that summary belongs on the
+issue regardless of what else the project's process records. If the project
+defines no such process, follow this lightweight procedure:
 
-## 4. Create the branch
+1. **Reproduce or confirm** — run the failing case, or, when a live
+   reproduction isn't practical, confirm the defect by reading the
+   implicated code path directly and tracing the data through it. State
+   which one you did.
+2. **Isolate the fault** — the specific file, function, or line responsible.
+3. **Identify the root cause** — not just the symptom. If only a hypothesis
+   is supportable from available evidence, label it as one.
+4. **Form the fix contract** — the four things Step 3 needs:
+   - Root cause
+   - Isolated fault (file:line)
+   - Planned fix (the minimal change)
+   - Planned verification (the test or manual step that will confirm it)
 
-Check the repository's documented branch model in `AGENTS.md`, `CLAUDE.md`,
-`CONTRIBUTING.md`, or an applicable git-conventions skill. Follow it when it
-exists. Otherwise, branch from the default branch as
-`fix/<issue-number>-<short-description>`.
+Do not broaden scope here — resist the urge to fix adjacent things noticed
+along the way. Note them for a separate issue instead.
 
-Ensure the working tree is clean before branching.
+## Step 3 — Rewrite the issue body
 
-## 5. Implement and verify
+Read `references/issue-template.md` and reshape the issue's existing content
+into that structure — preserve the original reporter's information, just
+reorganize it under the template headings — then append a `## Diagnosis`
+section from Step 2's fix contract and a `## Status` line.
 
-Implement only the minimal fix described by the fix contract. Then run the
-project's documented commands, preferring the specific regression test before a
-broader suite. When automation cannot fully verify the behavior, record the
-precise manual steps and outcome.
+Show the user the drafted body before writing anything. Editing a GitHub
+issue is visible to everyone with repo access, so **never push the edit
+without explicit confirmation** in the current conversation — same rule
+`new-issue` follows before creating an issue. If the user asks for changes,
+revise and re-show.
 
-## 6. Commit
+Once confirmed, use the gh-cli skill for the exact syntax to update the
+issue body.
 
-Use the repository's commit convention. If none exists, use
-`<type>(<scope>): <description>`: imperative, lowercase, and without a trailing
-period. The issue number need not be repeated because it is already in the
-branch name.
+## Step 4 — Branch
 
-## 7. Push and open the PR
+Check whether the project documents its own branch model (a `git-conventions`
+skill, a CONTRIBUTING.md, a CLAUDE.md/AGENTS.md section) and follow that if
+one exists — some projects branch fix work off an integration branch, not
+the default branch directly.
 
-Draft the PR title and body, then show them to the user and obtain explicit
-confirmation before pushing or opening the PR. The PR body should:
+Otherwise, the default convention: branch off the repository's default
+branch, named `fix/<issue-number>-<short-description>` — a few hyphenated
+words, not the full issue title.
 
-- Summarize the fix in a few bullets.
-- Link to the issue for its full diagnosis.
-- List the verification performed.
-- Include `Fixes #<N>` unless the repository closes issues manually.
+Confirm the working tree is clean before branching.
 
-After confirmation, push the branch and open the PR against the integration
-branch identified earlier. Update only the issue's status line to include the
-PR after the user has also confirmed that visible edit.
+## Step 5 — Implement the fix
 
-## 8. Review and close the loop
+If the project documents an implementation discipline — a `tdd` skill, a
+testing section in CONTRIBUTING, per-language coding guidelines — follow it for
+this step, the same way Step 2 follows the project's diagnosis process. Write
+the fix to the project's coding guidelines and development architecture: its
+style rules, module and layer boundaries, dependency direction, and anything an
+ADR or design doc pins down.
 
-Iterate rather than treating review as one pass:
+Apply the planned fix from Step 2's fix contract. Keep the diff to what the
+isolated fault requires — this is a fix, not a refactor pass.
 
-1. Run `pr-review` for the PR.
-2. If it has no open findings, report the clean result and stop.
-3. Otherwise use `receive-pr-review` to triage each finding.
-4. Address valid, small findings; record valid larger work, questions, and
-   reasoned disagreements as that skill directs. Commit and push approved
-   fixes.
-5. Re-run `pr-review`.
+## Step 6 — Verify
 
-Stop when review is clean or all remaining items require user input. If three
-rounds do not converge, stop and report what remains and why. Do not merge on
-the user's behalf.
+Run the project's own build/lint/test commands (check its CLAUDE.md/AGENTS.md
+or README for the canonical ones), and hold the change to the project's own
+bar for what must pass before work is considered done. Prefer running the
+specific test(s) that exercise the isolated fault before running the broader
+suite. Where a test can't fully cover the behavior (a CLI flow, a generated
+file's content), add a manual verification step and record exactly what you
+ran and observed.
 
-## Quality criteria
+## Step 7 — Commit
 
-- Root cause is identified and recorded before implementation changes.
-- Original reporter content is preserved when the issue is structured.
-- No GitHub-visible write happens without user confirmation in the current
-  conversation.
-- The diff remains limited to the isolated fault.
-- Verification records exact commands or manual steps and their outcome.
+Follow the project's own commit-message convention if it documents one
+(again, check for a `git-conventions` skill or CONTRIBUTING.md first).
+Otherwise default to `<type>(<scope>): <description>` — imperative,
+lowercase, no trailing period — and don't repeat the issue number in the
+message; the branch name already carries it.
 
-## Common pitfalls
+## Step 8 — Push and open the PR
 
-- Do not force feature requests or design work through this fix workflow.
-- Do not patch a visible symptom before isolating its root cause.
-- Do not assume the default branch is the integration branch.
-- Do not silently edit the issue, push a branch, or create a PR.
-- Do not stop after a single review pass when findings remain.
+Push the branch, then open a PR against the repository's default branch (or
+whatever Step 4 identified as the real integration target). Use the gh-cli
+skill for exact syntax. The PR body should:
 
-## Reference
+- Summarize the fix in a couple of bullets.
+- Link back to the issue for the full diagnosis rather than repeating it.
+- Include the verification/test plan from Step 6.
+- Reference the issue so it auto-closes on merge (`Fixes #<N>`), unless the
+  project's convention is to close issues manually.
 
-- [Issue-body template](references/issue-template.md) — required structure for
-  preserving the report while recording diagnosis and status.
+Then update the issue's `## Status` line (from Step 3) to point at the PR.
+
+## Step 9 — Review and close the loop
+
+The `pr-review` skill runs the review and `receive-pr-review` runs the
+response — those are the reviewers this workflow uses. If the project has its
+own review process that triggers on its own, don't block it, but don't go
+looking for a project review skill, review agent, or checklist to run in place
+of `pr-review`. When `pr-review` runs, hold the change to the project's coding
+guidelines and development architecture, not only to whether the bug is fixed.
+
+This is an iteration, not a single pass — keep cycling review ⇄ response
+until one of the two stopping conditions below is met.
+
+1. Invoke the `pr-review` skill against the PR.
+2. If it comes back clean (no open findings), stop — go to "Done" below.
+3. Otherwise, invoke `receive-pr-review` to triage every open finding: fix
+   what's valid and small, describe what's valid but large, ask what's
+   unclear, push back with a reason on what's a disagreement.
+4. Make every accepted fix by editing the source directly on the PR's own
+   branch and pushing additive commits to it — the branch the PR merges. Not
+   on a side branch, not in a worktree, not as a separate notes trail;
+   re-review only sees what's committed to that branch (`receive-pr-review`'s
+   own process already calls for pushing these — don't skip it).
+5. Go back to step 1 above — re-run `pr-review`. A fix can introduce something
+   new, or not fully land; the only way to know is to have the reviewer look
+   again, not to assume it worked.
+
+**Stop iterating** when either:
+
+- `pr-review` returns clean, or
+- every remaining open item is something only the user can resolve — an
+  unanswered `Needs Clarification` question, or a `Won't Fix` the user
+  should weigh in on — with nothing left that this workflow can act on
+  unilaterally.
+
+**Loop guard:** if three rounds pass without converging on one of the above,
+stop anyway and hand the situation back to the user with what's still open
+and why — that pattern usually means something structural (flaky
+verification, a disagreement not actually getting resolved) rather than an
+issue one more round will fix.
+
+**Done:** report the final state (clean, or what's still open and why) to
+the user. Do not merge on the user's behalf.
+
+## Quality Criteria
+
+- Root cause is identified and recorded *before* any implementation code
+  changes (Step 2 comes before Step 5, always).
+- The issue's original report content is preserved, not deleted, when
+  rewritten into the template.
+- No GitHub-visible write (issue edit, PR creation) happens without the
+  user seeing the draft and confirming first.
+- The diff stays scoped to the isolated fault — no drive-by refactors.
+- Verification is concrete: exact commands run and their outcome, not just
+  "tests pass."
+- The local development phase follows the project's own coding guidelines,
+  development architecture, and process skills where they exist; this skill's
+  own diagnose/implement/verify steps are the fallback, not an override.
+- The fix conforms to the project's style, module/layer boundaries, and
+  design-doc/ADR constraints, and the Step 9 review confirms that.
+
+## Common Pitfalls
+
+- **Skipping the scope check** — running this workflow on a feature request
+  produces a rushed, under-designed "fix." Redirect those instead.
+- **Fixing before diagnosing** — patching the symptom that's visible instead
+  of the root cause identified in Step 2.
+- **Assuming the default branch model** — some projects integrate fix
+  branches somewhere other than their default branch; check first.
+- **Silent GitHub writes** — editing the issue or opening the PR without a
+  confirmation checkpoint the user could have redirected.
+- **Re-diagnosing on receive-pr-review** — once Step 9 hands off, follow
+  `receive-pr-review`'s own triage rules rather than re-deriving them here.
+- **Treating Step 9 as a single pass** — one review, one triage, one
+  re-review, done. A re-review can surface new or still-open findings just
+  as easily as the first one; keep cycling until clean or blocked on the
+  user, not until one round has happened.
+- **Running the generic development steps when the project has its own** — the
+  GitHub-facing phases (issue triage, PR, review loop) are this skill's;
+  diagnosis, implementation discipline, and coding/architecture standards are
+  the project's wherever it defines them.
+
+## References
+
+- `references/issue-template.md` — the issue-body template and how to fill
+  in its Diagnosis and Status sections.

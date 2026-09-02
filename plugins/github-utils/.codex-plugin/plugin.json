@@ -1,7 +1,7 @@
 {
   "name": "github-utils",
-  "version": "1.4.0",
-  "description": "Bundles GitHub CLI guidance, issue creation and fix workflows, PR review workflows (including re-review and response), and changelog generation for Codex.",
+  "version": "1.5.0",
+  "description": "Bundles GitHub CLI guidance, issue creation and fix workflows, PR review workflows (including re-review and response), tag-triggered release cutting, and changelog generation for Codex.",
   "author": {
     "name": "cc-marketplace maintainers"
   },
@@ -14,6 +14,7 @@
     "pull-request",
     "review",
     "issue",
+    "release",
     "changelog",
     "release-notes"
   ],
@@ -21,7 +22,7 @@
   "interface": {
     "displayName": "GitHub Utils",
     "shortDescription": "GitHub CLI, issue, PR review/response, and changelog workflows.",
-    "longDescription": "Use GitHub CLI guidance to create or fix issues, review and respond to pull requests, and generate changelogs in Codex.",
+    "longDescription": "Use GitHub CLI guidance to create or fix issues, review and respond to pull requests, cut tag-triggered releases, and generate changelogs in Codex.",
     "developerName": "cc-marketplace maintainers",
     "category": "Developer Tools",
     "capabilities": [

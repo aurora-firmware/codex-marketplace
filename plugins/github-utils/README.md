@@ -7,6 +7,7 @@
 - `receive-pr-review`
 - `new-issue`
 - `fix-issue`
+- `release`
 - `changelog`
 
 ## Skills
